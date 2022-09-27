@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="开发环境搭建由于linux内核代码&#x2F;头文件最好都放在linux环境下开发测试,在Mac下开发不太方便,记录一下使用vscode + remote ssh 进行远程开发  vscode 安装插件 Remote - SSH 方便连接到linux机器,注意,linux机器不要用docker,自己搭一个虚拟机或者物理机器,方便双机调试 vscode 会自动把 远程服务需要的文件传到linux机器">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用vscode+clangd 进行内核代码阅读&#x2F;开发">
+<meta property="og:url" content="https://xxxnull.github.io/b766795a58e5/index.html">
+<meta property="og:site_name" content="Cyber Security">
+<meta property="og:description" content="开发环境搭建由于linux内核代码&#x2F;头文件最好都放在linux环境下开发测试,在Mac下开发不太方便,记录一下使用vscode + remote ssh 进行远程开发  vscode 安装插件 Remote - SSH 方便连接到linux机器,注意,linux机器不要用docker,自己搭一个虚拟机或者物理机器,方便双机调试 vscode 会自动把 远程服务需要的文件传到linux机器">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-01-10T03:18:30.000Z">
+<meta property="article:modified_time" content="2022-09-15T04:10:48.730Z">
+<meta property="article:author" content="admin">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="内核">
+<meta property="article:tag" content="vscode">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+      
+    
+    <!-- title -->
+    <title>使用vscode+clangd 进行内核代码阅读/开发</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="https://github.com/xxxNull">Projects</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="Previous post" href="/6d188cabc922/"><i class="fas fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/23332fba8d24/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://xxxnull.github.io/b766795a58e5/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://xxxnull.github.io/b766795a58e5/&text=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://xxxnull.github.io/b766795a58e5/&title=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://xxxnull.github.io/b766795a58e5/&is_video=false&description=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=使用vscode+clangd 进行内核代码阅读/开发&body=Check out this article: https://xxxnull.github.io/b766795a58e5/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://xxxnull.github.io/b766795a58e5/&title=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://xxxnull.github.io/b766795a58e5/&title=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://xxxnull.github.io/b766795a58e5/&title=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://xxxnull.github.io/b766795a58e5/&title=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://xxxnull.github.io/b766795a58e5/&name=使用vscode+clangd 进行内核代码阅读/开发&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://xxxnull.github.io/b766795a58e5/&t=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA"><span class="toc-number">1.</span> <span class="toc-text">开发环境搭建</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E7%A4%BA%E4%BE%8B"><span class="toc-number">2.</span> <span class="toc-text">配置示例:</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Makefile"><span class="toc-number">2.0.1.</span> <span class="toc-text">Makefile:</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#clang-format"><span class="toc-number">2.0.2.</span> <span class="toc-text">.clang-format:</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E2%9D%95%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="toc-number">3.</span> <span class="toc-text">❕注意事项</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        使用vscode+clangd 进行内核代码阅读/开发
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">admin</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-01-10T03:18:30.000Z" itemprop="datePublished">2022-01-10</time>
+        
+      
+    </div>
+
+
+      
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/Linux/" rel="tag">Linux</a>, <a class="tag-link-link" href="/tags/vscode/" rel="tag">vscode</a>, <a class="tag-link-link" href="/tags/%E5%86%85%E6%A0%B8/" rel="tag">内核</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <h2 id="开发环境搭建"><a href="#开发环境搭建" class="headerlink" title="开发环境搭建"></a>开发环境搭建</h2><p>由于linux内核代码&#x2F;头文件最好都放在linux环境下开发测试,在Mac下开发不太方便,记录一下使用vscode + remote ssh 进行远程开发</p>
+<ol>
+<li>vscode 安装插件 <code>Remote - SSH</code> 方便连接到linux机器,注意,<font color="#ce1616">linux机器不要用docker</font>,自己搭一个虚拟机或者物理机器,方便双机调试</li>
+<li>vscode 会自动把 远程服务需要的文件传到linux机器下 所以请配置 ssh 的免密码登录,否则每次打开工程都需要输密码,很麻烦,保证机器至少有100m的空间用来存放vscode远程开发的插件&#x2F;配置等文件</li>
+<li>linux 机器安装 <code>clangd</code> ubuntu下使用 <code>sudo apt install clangd</code>,最好也把<code>clang</code>也安装上,因为代码提示都是靠llvm 编译出的IR来进行AST分析,实现代码提示功能的</li>
+<li>linux 机器安装 <code>bear</code> ubuntu下使用 <code>sudo apt install bear</code> 这个是用来自动生成 <code>compile_commands.json</code> 这个文件来配置<code>clangd</code></li>
+<li>vscode 配置 linux机器的<code>clangd</code>,给linux机器装上<code>clangd</code> 插件,配置如下:<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">&quot;clangd.arguments&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">  <span class="string">&quot;--background-index&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="string">&quot;--completion-style=detailed&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="string">&quot;--header-insertion=never&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="string">&quot;-log=info&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="string">&quot;--pretty&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="string">&quot;--clang-tidy&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="string">&quot;--header-insertion=iwyu&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="string">&quot;--compile-commands-dir=$&#123;workspaceFolder&#125;&quot;</span></span><br><span class="line"><span class="punctuation">]</span></span><br></pre></td></tr></table></figure></li>
+<li>在<code>$&#123;workspaceFolder&#125;</code> 也就是你使用vscode 打开文件夹的目录下新建 <code>.clangd</code> 文件配置详细工作内容,配置如下:<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">CompileFlags:</span> </span><br><span class="line">  <span class="attr">Add:</span></span><br><span class="line">  [</span><br><span class="line">    <span class="string">&quot;-I/usr/src/linux-headers-5.15.0-46/&quot;</span>, <span class="comment"># 配置linux源码目录</span></span><br><span class="line">    <span class="string">&quot;-I./include&quot;</span>, <span class="comment"># 配置包含目录</span></span><br><span class="line">    <span class="string">&quot;-DDEBUG&quot;</span>, <span class="comment"># 配置宏,方便调试模式切换</span></span><br><span class="line">    <span class="string">&quot;-Wunused-result&quot;</span>, <span class="comment"># 配置 clang 参数</span></span><br><span class="line">  ]</span><br><span class="line">  <span class="attr">Remove:</span> <span class="comment"># 移除 clang 编译时的参数,因为clangd会使用compile_commands.json这个文件的编译参数,但是这个文件是gcc适用的,所以需要移除clang不适用的参数</span></span><br><span class="line">  [</span><br><span class="line">    <span class="string">&quot;-mpreferred-stack-boundary*&quot;</span>,</span><br><span class="line">    <span class="string">&quot;-mindirect-branch=thunk-extern&quot;</span>,</span><br><span class="line">    <span class="string">&quot;-mindirect-branch-register&quot;</span>,</span><br><span class="line">    <span class="string">&quot;-mfunction-return=thunk-extern&quot;</span>,</span><br><span class="line">    <span class="string">&quot;-fno-allow-store-data-races&quot;</span>,</span><br><span class="line">    <span class="string">&quot;-fconserve-stack&quot;</span>,</span><br><span class="line">    <span class="string">&quot;-mrecord-mcount&quot;</span>,</span><br><span class="line">  ]</span><br><span class="line">  <span class="attr">Compiler:</span> <span class="string">clang</span> <span class="comment"># 注意,内核使用的是gcc来编译代码的,但是此处配置的是使用clang来编译llvm IR进行语法提示,两者是不一样的</span></span><br><span class="line"></span><br><span class="line"><span class="attr">Diagnostics:</span></span><br><span class="line">  <span class="attr">ClangTidy:</span></span><br><span class="line">    <span class="attr">CheckOptions:</span></span><br><span class="line">      <span class="attr">readability-identifier-naming.VariableCase:</span> <span class="string">CamelCase</span></span><br></pre></td></tr></table></figure></li>
+<li>配置好<code>clangd</code>之后 还需要使用<code>bear</code>来自动生成内核编译时的参数,因为编译内核都是用<code>Makefile</code>来管理工程的,需要<code>bear</code>配合<code>clangd</code>才能进行自动完成等提示</li>
+<li>在你的内核工程下执行<code>bear -- make</code>此时会生成一个<code>compile_commands.json</code>文件,里面记录了<code>make</code>命令执行过程中用到的所有参数</li>
+</ol>
+<h2 id="配置示例"><a href="#配置示例" class="headerlink" title="配置示例:"></a>配置示例:</h2><h4 id="Makefile"><a href="#Makefile" class="headerlink" title="Makefile:"></a>Makefile:</h4><p>用来生成内核文件.ko</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> KERNEL_VERSION = <span class="variable">$(<span class="built_in">shell</span> uname -r)</span></span><br><span class="line"><span class="keyword">export</span> KERNEL_DIR = /lib/modules/<span class="variable">$(KERNEL_VERSION)</span>/build</span><br><span class="line"><span class="keyword">export</span> KERNEL_TOOL =/usr/src/linux-headers-<span class="variable">$(KERNEL_VERSION)</span>/scripts/</span><br><span class="line"></span><br><span class="line">obj-m := protect_openat.o <span class="comment"># 和源码名称一致</span></span><br><span class="line">ccflags-y :=-g -DDEBUG <span class="comment"># gcc 参数,注意Makefile的参数和clangd是不一样的,clangd只是用来进行语法提示,实际上编译文件还得靠gcc</span></span><br><span class="line"></span><br><span class="line"><span class="section">all:modules</span></span><br><span class="line"></span><br><span class="line"><span class="section">modules:</span></span><br><span class="line">	@make -C <span class="variable">$(KERNEL_DIR)</span> M=$$PWD modules;</span><br></pre></td></tr></table></figure>
+<h4 id="clang-format"><a href="#clang-format" class="headerlink" title=".clang-format:"></a>.clang-format:</h4><p>用来格式化&#x2F;美化代码</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">Language:</span>        <span class="string">Cpp</span></span><br><span class="line"><span class="attr">BasedOnStyle:</span>  <span class="string">Google</span></span><br><span class="line"><span class="attr">AccessModifierOffset:</span> <span class="number">-4</span></span><br><span class="line"><span class="attr">AlignAfterOpenBracket:</span> <span class="string">Align</span></span><br><span class="line"><span class="attr">AlignConsecutiveMacros:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">AlignConsecutiveAssignments:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">AlignConsecutiveBitFields:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">AlignConsecutiveDeclarations:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">AlignEscapedNewlines:</span> <span class="string">Right</span></span><br><span class="line"><span class="attr">AlignOperands:</span>   <span class="string">Align</span></span><br><span class="line"><span class="attr">AlignTrailingComments:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">AllowAllArgumentsOnNextLine:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">AllowAllConstructorInitializersOnNextLine:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">AllowAllParametersOfDeclarationOnNextLine:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">AllowShortEnumsOnASingleLine:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">AllowShortBlocksOnASingleLine:</span> <span class="string">Never</span></span><br><span class="line"><span class="attr">AllowShortCaseLabelsOnASingleLine:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">AllowShortFunctionsOnASingleLine:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">AllowShortLambdasOnASingleLine:</span> <span class="string">All</span></span><br><span class="line"><span class="attr">AllowShortIfStatementsOnASingleLine:</span> <span class="string">Never</span></span><br><span class="line"><span class="attr">AllowShortLoopsOnASingleLine:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">AlwaysBreakAfterDefinitionReturnType:</span> <span class="string">None</span></span><br><span class="line"><span class="attr">AlwaysBreakAfterReturnType:</span> <span class="string">None</span></span><br><span class="line"><span class="attr">AlwaysBreakBeforeMultilineStrings:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">AlwaysBreakTemplateDeclarations:</span> <span class="string">MultiLine</span></span><br><span class="line"><span class="attr">BinPackArguments:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">BinPackParameters:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">BraceWrapping:</span></span><br><span class="line">  <span class="attr">AfterCaseLabel:</span>  <span class="literal">false</span></span><br><span class="line">  <span class="attr">AfterClass:</span>      <span class="literal">false</span></span><br><span class="line">  <span class="attr">AfterControlStatement:</span> <span class="string">Never</span></span><br><span class="line">  <span class="attr">AfterEnum:</span>       <span class="literal">false</span></span><br><span class="line">  <span class="attr">AfterFunction:</span>   <span class="literal">false</span></span><br><span class="line">  <span class="attr">AfterNamespace:</span>  <span class="literal">false</span></span><br><span class="line">  <span class="attr">AfterObjCDeclaration:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">AfterStruct:</span>     <span class="literal">false</span></span><br><span class="line">  <span class="attr">AfterUnion:</span>      <span class="literal">false</span></span><br><span class="line">  <span class="attr">AfterExternBlock:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">BeforeCatch:</span>     <span class="literal">false</span></span><br><span class="line">  <span class="attr">BeforeElse:</span>      <span class="literal">false</span></span><br><span class="line">  <span class="attr">BeforeLambdaBody:</span> <span class="literal">false</span></span><br><span class="line">  <span class="attr">BeforeWhile:</span>     <span class="literal">false</span></span><br><span class="line">  <span class="attr">IndentBraces:</span>    <span class="literal">false</span></span><br><span class="line">  <span class="attr">SplitEmptyFunction:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">SplitEmptyRecord:</span> <span class="literal">true</span></span><br><span class="line">  <span class="attr">SplitEmptyNamespace:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">BreakBeforeBinaryOperators:</span> <span class="string">None</span></span><br><span class="line"><span class="attr">BreakBeforeBraces:</span> <span class="string">Allman</span></span><br><span class="line"><span class="attr">BreakBeforeInheritanceComma:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">BreakInheritanceList:</span> <span class="string">BeforeColon</span></span><br><span class="line"><span class="attr">BreakBeforeTernaryOperators:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">BreakConstructorInitializersBeforeComma:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">BreakConstructorInitializers:</span> <span class="string">BeforeColon</span></span><br><span class="line"><span class="attr">BreakAfterJavaFieldAnnotations:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">BreakStringLiterals:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">ColumnLimit:</span>     <span class="number">0</span></span><br><span class="line"><span class="attr">CommentPragmas:</span>  <span class="string">&#x27;^ IWYU pragma:&#x27;</span></span><br><span class="line"><span class="attr">CompactNamespaces:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">ConstructorInitializerAllOnOneLineOrOnePerLine:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">ConstructorInitializerIndentWidth:</span> <span class="number">4</span></span><br><span class="line"><span class="attr">ContinuationIndentWidth:</span> <span class="number">4</span></span><br><span class="line"><span class="attr">Cpp11BracedListStyle:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">DeriveLineEnding:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">DerivePointerAlignment:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">DisableFormat:</span>   <span class="literal">false</span></span><br><span class="line"><span class="attr">ExperimentalAutoDetectBinPacking:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">FixNamespaceComments:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">ForEachMacros:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">foreach</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">Q_FOREACH</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">BOOST_FOREACH</span></span><br><span class="line"><span class="attr">IncludeBlocks:</span>   <span class="string">Preserve</span></span><br><span class="line"><span class="attr">IncludeCategories:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">Regex:</span>           <span class="string">&#x27;^&quot;(llvm|llvm-c|clang|clang-c)/&#x27;</span></span><br><span class="line">    <span class="attr">Priority:</span>        <span class="number">2</span></span><br><span class="line">    <span class="attr">SortPriority:</span>    <span class="number">0</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">Regex:</span>           <span class="string">&#x27;^(&lt;|&quot;(gtest|gmock|isl|json)/)&#x27;</span></span><br><span class="line">    <span class="attr">Priority:</span>        <span class="number">3</span></span><br><span class="line">    <span class="attr">SortPriority:</span>    <span class="number">0</span></span><br><span class="line">  <span class="bullet">-</span> <span class="attr">Regex:</span>           <span class="string">&#x27;.*&#x27;</span></span><br><span class="line">    <span class="attr">Priority:</span>        <span class="number">1</span></span><br><span class="line">    <span class="attr">SortPriority:</span>    <span class="number">0</span></span><br><span class="line"><span class="attr">IncludeIsMainRegex:</span> <span class="string">&#x27;(Test)?$&#x27;</span></span><br><span class="line"><span class="attr">IncludeIsMainSourceRegex:</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line"><span class="attr">IndentCaseLabels:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">IndentCaseBlocks:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">IndentGotoLabels:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">IndentPPDirectives:</span> <span class="string">None</span></span><br><span class="line"><span class="attr">IndentExternBlock:</span> <span class="string">AfterExternBlock</span></span><br><span class="line"><span class="attr">IndentWidth:</span>     <span class="number">4</span></span><br><span class="line"><span class="attr">IndentWrappedFunctionNames:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">InsertTrailingCommas:</span> <span class="string">None</span></span><br><span class="line"><span class="attr">JavaScriptQuotes:</span> <span class="string">Leave</span></span><br><span class="line"><span class="attr">JavaScriptWrapImports:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">KeepEmptyLinesAtTheStartOfBlocks:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">MacroBlockBegin:</span> <span class="string">&#x27;&#x27;</span></span><br><span class="line"><span class="attr">MacroBlockEnd:</span>   <span class="string">&#x27;&#x27;</span></span><br><span class="line"><span class="attr">MaxEmptyLinesToKeep:</span> <span class="number">1</span></span><br><span class="line"><span class="attr">NamespaceIndentation:</span> <span class="string">None</span></span><br><span class="line"><span class="attr">ObjCBinPackProtocolList:</span> <span class="string">Auto</span></span><br><span class="line"><span class="attr">ObjCBlockIndentWidth:</span> <span class="number">2</span></span><br><span class="line"><span class="attr">ObjCBreakBeforeNestedBlockParam:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">ObjCSpaceAfterProperty:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">ObjCSpaceBeforeProtocolList:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">PenaltyBreakAssignment:</span> <span class="number">2</span></span><br><span class="line"><span class="attr">PenaltyBreakBeforeFirstCallParameter:</span> <span class="number">19</span></span><br><span class="line"><span class="attr">PenaltyBreakComment:</span> <span class="number">300</span></span><br><span class="line"><span class="attr">PenaltyBreakFirstLessLess:</span> <span class="number">120</span></span><br><span class="line"><span class="attr">PenaltyBreakString:</span> <span class="number">1000</span></span><br><span class="line"><span class="attr">PenaltyBreakTemplateDeclaration:</span> <span class="number">10</span></span><br><span class="line"><span class="attr">PenaltyExcessCharacter:</span> <span class="number">1000000</span></span><br><span class="line"><span class="attr">PenaltyReturnTypeOnItsOwnLine:</span> <span class="number">60</span></span><br><span class="line"><span class="attr">PointerAlignment:</span> <span class="string">Right</span></span><br><span class="line"><span class="attr">ReflowComments:</span>  <span class="literal">true</span></span><br><span class="line"><span class="attr">SortIncludes:</span>    <span class="literal">true</span></span><br><span class="line"><span class="attr">SortUsingDeclarations:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">SpaceAfterCStyleCast:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">SpaceAfterLogicalNot:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">SpaceAfterTemplateKeyword:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">SpaceBeforeAssignmentOperators:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">SpaceBeforeCpp11BracedList:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">SpaceBeforeCtorInitializerColon:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">SpaceBeforeInheritanceColon:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">SpaceBeforeParens:</span> <span class="string">ControlStatements</span></span><br><span class="line"><span class="attr">SpaceBeforeRangeBasedForLoopColon:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">SpaceInEmptyBlock:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">SpaceInEmptyParentheses:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">SpacesBeforeTrailingComments:</span> <span class="number">1</span></span><br><span class="line"><span class="attr">SpacesInAngles:</span>  <span class="literal">false</span></span><br><span class="line"><span class="attr">SpacesInConditionalStatement:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">SpacesInContainerLiterals:</span> <span class="literal">true</span></span><br><span class="line"><span class="attr">SpacesInCStyleCastParentheses:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">SpacesInParentheses:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">SpacesInSquareBrackets:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">SpaceBeforeSquareBrackets:</span> <span class="literal">false</span></span><br><span class="line"><span class="attr">Standard:</span>        <span class="string">Auto</span></span><br><span class="line"><span class="attr">StatementMacros:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">Q_UNUSED</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">QT_REQUIRE_VERSION</span></span><br><span class="line"><span class="attr">TabWidth:</span>        <span class="number">4</span></span><br><span class="line"><span class="attr">UseCRLF:</span>         <span class="literal">false</span></span><br><span class="line"><span class="attr">UseTab:</span>          <span class="string">Never</span></span><br><span class="line"><span class="attr">WhitespaceSensitiveMacros:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">STRINGIZE</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">PP_STRINGIZE</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">BOOST_PP_STRINGIZE</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="❕注意事项"><a href="#❕注意事项" class="headerlink" title="❕注意事项"></a>❕<font color="red">注意事项</font></h2><ol>
+<li>执行<code>bear -- make</code>时,如果你的源码没有变动过,会生成出一个空的<code>compile_commands.json</code> 文件,此时<code>clangd</code>的智能提示会失效,所以在提示失效时,只需要改动一下源码,再重新执行一下<code>bear -- make</code> 即可</li>
+<li><code>clangd</code>配置和<code>Makefile</code>是不一样的,<code>clangd</code>只用于vscode的智能代码提示,头文件的自动查找,<code>Makefile</code>才是用来生成内核<code>ko</code>文件的东西</li>
+</ol>
+
+  </div>
+</article>
+
+
+    <div class="blog-post-comments">
+        <div id="utterances_thread">
+            <noscript>Please enable JavaScript to view the comments.</noscript>
+        </div>
+    </div>
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/xxxNull">Projects</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA"><span class="toc-number">1.</span> <span class="toc-text">开发环境搭建</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E7%A4%BA%E4%BE%8B"><span class="toc-number">2.</span> <span class="toc-text">配置示例:</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Makefile"><span class="toc-number">2.0.1.</span> <span class="toc-text">Makefile:</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#clang-format"><span class="toc-number">2.0.2.</span> <span class="toc-text">.clang-format:</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E2%9D%95%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="toc-number">3.</span> <span class="toc-text">❕注意事项</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://xxxnull.github.io/b766795a58e5/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://xxxnull.github.io/b766795a58e5/&text=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://xxxnull.github.io/b766795a58e5/&title=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://xxxnull.github.io/b766795a58e5/&is_video=false&description=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=使用vscode+clangd 进行内核代码阅读/开发&body=Check out this article: https://xxxnull.github.io/b766795a58e5/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://xxxnull.github.io/b766795a58e5/&title=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://xxxnull.github.io/b766795a58e5/&title=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://xxxnull.github.io/b766795a58e5/&title=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://xxxnull.github.io/b766795a58e5/&title=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://xxxnull.github.io/b766795a58e5/&name=使用vscode+clangd 进行内核代码阅读/开发&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://xxxnull.github.io/b766795a58e5/&t=使用vscode+clangd 进行内核代码阅读/开发"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2014-2022
+    admin
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="https://github.com/xxxNull">Projects</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script> 
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script> 
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+    <script type="text/javascript">
+      var utterances_repo = 'xxxNull/xxxNull.github.io';
+      var utterances_issue_term = 'pathname';
+      var utterances_label = 'Comment';
+      var utterances_theme = 'github-dark';
+
+      (function(){
+          var script = document.createElement('script');
+
+          script.src = 'https://utteranc.es/client.js';
+          script.setAttribute('repo', utterances_repo);
+          script.setAttribute('issue-term', 'pathname');
+          script.setAttribute('label', utterances_label);
+          script.setAttribute('theme', utterances_theme);
+          script.setAttribute('crossorigin', 'anonymous');
+          script.async = true;
+          (document.getElementById('utterances_thread')).appendChild(script);
+      }());
+  </script>
+
+</body>
+</html>

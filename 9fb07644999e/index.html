@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="code {     color:#0099cc; }   什么是eBPF&#x2F;BPFBPF 是 Linux 内核中一个非常灵活与高效的类虚拟机（virtual machine-like）组件， 能够在许多内核 hook 点安全地执行字节码（bytecode ）。很多 内核子系统都已经使用了 BPF，例如常见的网络（networking）、跟踪（ tracing）与安全（security">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用eBPF实现linux下无需驱动的文件保护">
+<meta property="og:url" content="https://xxxnull.github.io/9fb07644999e/index.html">
+<meta property="og:site_name" content="Cyber Security">
+<meta property="og:description" content="code {     color:#0099cc; }   什么是eBPF&#x2F;BPFBPF 是 Linux 内核中一个非常灵活与高效的类虚拟机（virtual machine-like）组件， 能够在许多内核 hook 点安全地执行字节码（bytecode ）。很多 内核子系统都已经使用了 BPF，例如常见的网络（networking）、跟踪（ tracing）与安全（security">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://xxxnull.github.io/9fb07644999e/1.png">
+<meta property="og:image" content="https://xxxnull.github.io/9fb07644999e/2.png">
+<meta property="og:image" content="https://xxxnull.github.io/9fb07644999e/3.png">
+<meta property="og:image" content="https://xxxnull.github.io/9fb07644999e/4.png">
+<meta property="article:published_time" content="2022-09-26T06:57:49.000Z">
+<meta property="article:modified_time" content="2022-09-26T06:43:24.720Z">
+<meta property="article:author" content="admin">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="内核">
+<meta property="article:tag" content="安全">
+<meta property="article:tag" content="eBPF">
+<meta property="article:tag" content="Go">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://xxxnull.github.io/9fb07644999e/1.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+      
+    
+    <!-- title -->
+    <title>使用eBPF实现linux下无需驱动的文件保护</title>
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fas fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fas fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="https://github.com/xxxNull">Projects</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="Next post" href="/26ba831ed3d0/"><i class="fas fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fas fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://xxxnull.github.io/9fb07644999e/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://xxxnull.github.io/9fb07644999e/&text=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://xxxnull.github.io/9fb07644999e/&title=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://xxxnull.github.io/9fb07644999e/&is_video=false&description=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=使用eBPF实现linux下无需驱动的文件保护&body=Check out this article: https://xxxnull.github.io/9fb07644999e/"><i class="fas fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://xxxnull.github.io/9fb07644999e/&title=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://xxxnull.github.io/9fb07644999e/&title=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://xxxnull.github.io/9fb07644999e/&title=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://xxxnull.github.io/9fb07644999e/&title=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://xxxnull.github.io/9fb07644999e/&name=使用eBPF实现linux下无需驱动的文件保护&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://xxxnull.github.io/9fb07644999e/&t=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    <div id="toc">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFeBPF-x2F-BPF"><span class="toc-number">1.</span> <span class="toc-text">什么是eBPF&#x2F;BPF</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFCilium-x2F-ebpf"><span class="toc-number">2.</span> <span class="toc-text">什么是Cilium&#x2F;ebpf</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#eBPF%E7%9A%84%E4%BC%98%E5%8A%BF%E5%92%8C%E5%8A%A3%E5%8A%BF"><span class="toc-number">3.</span> <span class="toc-text">eBPF的优势和劣势</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%A8eBPF%E5%AE%9E%E7%8E%B0linux%E4%B8%8B%E6%96%87%E4%BB%B6%E4%BF%9D%E6%8A%A4"><span class="toc-number">4.</span> <span class="toc-text">用eBPF实现linux下文件保护</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%80%E5%A7%8B%E7%BC%96%E7%A0%81"><span class="toc-number">5.</span> <span class="toc-text">开始编码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%BC%94%E7%A4%BA"><span class="toc-number">6.</span> <span class="toc-text">演示</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Tips"><span class="toc-number">7.</span> <span class="toc-text">Tips</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">8.</span> <span class="toc-text">总结</span></a></li></ol>
+    </div>
+  </span>
+</div>
+
+    
+    <div class="content index py4">
+        
+        <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle" itemprop="name headline">
+        使用eBPF实现linux下无需驱动的文件保护
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span itemprop="name">admin</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-09-26T06:57:49.000Z" itemprop="datePublished">2022-09-26</time>
+        
+      
+    </div>
+
+
+      
+
+      
+    <div class="article-tag">
+        <i class="fas fa-tag"></i>
+        <a class="tag-link-link" href="/tags/Go/" rel="tag">Go</a>, <a class="tag-link-link" href="/tags/Linux/" rel="tag">Linux</a>, <a class="tag-link-link" href="/tags/eBPF/" rel="tag">eBPF</a>, <a class="tag-link-link" href="/tags/%E5%86%85%E6%A0%B8/" rel="tag">内核</a>, <a class="tag-link-link" href="/tags/%E5%AE%89%E5%85%A8/" rel="tag">安全</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content" itemprop="articleBody">
+    <style>
+code {
+    color:#0099cc;
+}
+</style>
+
+<h2 id="什么是eBPF-x2F-BPF"><a href="#什么是eBPF-x2F-BPF" class="headerlink" title="什么是eBPF&#x2F;BPF"></a>什么是eBPF&#x2F;BPF</h2><p>BPF 是 Linux 内核中一个非常灵活与高效的类虚拟机（virtual machine-like）组件， 能够在许多内核 hook 点安全地执行字节码（bytecode ）。很多 内核子系统都已经使用了 BPF，例如常见的网络（networking）、跟踪（ tracing）与安全（security ，例如沙盒）。</p>
+<p>BPF 其实早在 1992 年就出现了，但本文介绍的是扩展的 BPF（extended Berkeley Packet Filter，eBPF）。eBPF 最早出现在 3.18 内核中，此后原来的 BPF 就被称为 “经典” BPF（classic BPF, cBPF），cBPF 现在基本已经过时了。很多人知道 cBPF 是因为它是 tcpdump 的包过滤语言。现在，Linux 内核只运行 eBPF，内核会将加载的 cBPF 字节码 透明地转换成 eBPF 再执行。如无特殊说明，本文中所说的 BPF 都是泛指 BPF 技术。</p>
+<p><strong>大白话说</strong>:eBPF是内核的一种技术,可以把特定代码编译成在eBPF虚拟机执行并且做一些对内核功能的<code>修改,监听,捕获,分析</code>等<br>详细介绍请看以下几个链接,对于eBPF有详细介绍,非常适合入门学习<br>对eBPF常见的<code>map</code>,<code>kretprobe</code>,<code>kprobe</code>,<code>tracepoint</code>,<code>fentry</code>,<code>tc</code>,<code>xdp</code>不懂的都可以去下面几个链接&#x2F;官方示例中找到答案</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://ebpf.io/what-is-ebpf/">ebpf官网介绍</a></li>
+<li><a target="_blank" rel="noopener" href="https://arthurchiao.art/blog/cilium-bpf-xdp-reference-guide-zh/#25-bpf-sysctls">Cilium：BPF 和 XDP 参考指南</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/496468540">Linux中基于eBPF的恶意利用与检测机制</a></li>
+<li><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzA3NzUzNTM4NA==&mid=2649613401&idx=1&sn=15834d89a79278c5137e7ee6cbb253aa&chksm=8749c5aeb03e4cb8e360404e25abf69df8f6f2aa1807e919f1661fef0ba0dc91233b55eede4d&scene=178&cur_album_id=1996568890906148869#rd">使用 Go 语言管理和分发 ebpf 程序</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.kernel.org/doc/html/latest/bpf/index.html">BPF Documentation&#x2F;Linux 官方文档</a></li>
+</ul>
+<h2 id="什么是Cilium-x2F-ebpf"><a href="#什么是Cilium-x2F-ebpf" class="headerlink" title="什么是Cilium&#x2F;ebpf"></a>什么是Cilium&#x2F;ebpf</h2><p>cilium&#x2F;ebpf库是 Cilium 项目的一个子项目。仅使用 Go 语言编写的库，提供了加载、编译和调试 eBPF 程序的功能。它具有最小的外部依赖性，适合在长期运行的进程中使用。库主要有由 Cloudflare 和 Cilium 两家公司维护，由于 Cilium 产品的火爆程度，该库的活跃度在社区层面还是会持续演进和发展。</p>
+<p>cilium&#x2F;ebpf 已经满足生产可用，但 API 现在显然是不稳定的，编写的程序升级时可能需要进行部分调整。cilium&#x2F;ebpf 使用样例可以参考<a target="_blank" rel="noopener" href="https://github.com/cilium/ebpf/tree/master/examples">这里</a>。该库提供的 cmd&#x2F;bpf2go 工具允许在 Go 代码中编译和嵌入 eBPF 程序。</p>
+<p><strong>大白话说</strong>:Cilium&#x2F;ebpf 是一个 go 的第三方库 用于加载eBPF代码进内核和自动编译eBPF模块,使用 <code>go generate</code> 自动生成eBPF文件并且自动绑定进go二进制文件,非常方便</p>
+<p>❕<font color="red">注意</font>: 一个完整的eBPF包含两部分(内核层和应用层),eBPF内核层代码和eBPF加载程序,此时go写的程序就是用来帮助把eBPF代码加载进内核的,如果编写的是<code>xdp</code>或者<code>tc</code>类型的eBPF程序,则不需要使用go加载,用linux自带的<code>ip link</code>命令即可加载模块<br>但一般工程实践都是两部分,因为应用层还兼顾着分析内核传回来的数据</p>
+<p>和 Cilium&#x2F;ebpf 相同类型的库还有 <a target="_blank" rel="noopener" href="https://github.com/iovisor/bcc">BCC</a> 以及 <a target="_blank" rel="noopener" href="https://github.com/libbpf/libbpf-bootstrap">libbpf</a> </p>
+<ul>
+<li>BCC是python编写的,不建议在工程上使用,因为他还用一些<code>魔法</code>处理了eBPF的c代码,无法直接使用clang编译,使用Cilium&#x2F;ebpf可以把内核和应用分立,还可以用vscode进行智能代码提示,很方便</li>
+<li>libbpf 是用c编写的,对于分析数据&#x2F;处理数据还是有一定的短板,所以一般建议使用 Cilium&#x2F;ebpf 来写 eBPF 类型的程序</li>
+</ul>
+<h2 id="eBPF的优势和劣势"><a href="#eBPF的优势和劣势" class="headerlink" title="eBPF的优势和劣势"></a>eBPF的优势和劣势</h2><ul>
+<li>优势:<ul>
+<li>方便随时更新维护,对内核进行无感热插拔,实际上eBPF程序就是c代码直接编译出汇编,所以可以做到类似于<code>shellcode</code>远程更新与加载</li>
+<li>可以做到 <code>CO-RE</code> 即一次编译 到处运行, 因为eBPF是基于字节码(汇编)和虚拟机的,可以兼容各种内核,不过实际上使用还是稍微有点麻烦</li>
+<li>非常适合进行流量侧的分析与调整,Cilium就是一个优秀的例子</li>
+<li>加载前自动检查,不会导致内核崩溃或异常,是优势也是劣势,牺牲了一部分骚操作和灵活性</li>
+<li>非常强大,对内核层&#x2F;应用层的任意调用进行分析&#x2F;patch</li>
+</ul>
+</li>
+<li>劣势:<ul>
+<li>只能使用eBPF提供的API,无法直接调用内核函数&#x2F;syscall</li>
+<li>除了xdp和tc类型的程序,普通程序无法直接持久化,依赖用户层将eBPF程序加载进内核,程序退出后eBPF程序也跟随退出</li>
+<li>限制比较多,天生适合做防守方,对于内核流程无法直接进行控制,如果把eBPF用于恶意程序,还是比较麻烦的</li>
+</ul>
+</li>
+</ul>
+<h2 id="用eBPF实现linux下文件保护"><a href="#用eBPF实现linux下文件保护" class="headerlink" title="用eBPF实现linux下文件保护"></a>用eBPF实现linux下文件保护</h2><p>我之前的文章已经说过文件保护的实现流程,这里就不再赘述了,详情可以<a href="https://xxxnull.github.io/6d188cabc922/">点我</a> 主要讲一下如何实现eBPF下的文件保护</p>
+<p><code>bpf-helpers.h</code> 里实现了所有eBPF程序可用的api,其中有一个函数<code>bpf_override_return</code>可以直接覆盖返回值<br>原文介绍如下:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">long bpf_override_return(struct pt_regs *regs, u64 rc)</span><br><span class="line"></span><br><span class="line">              Description</span><br><span class="line">                     Used for error injection, this helper uses kprobes</span><br><span class="line">                     to override the return value of the probed</span><br><span class="line">                     function, and to set it to rc.  The first argument</span><br><span class="line">                     is the context regs on which the kprobe works.</span><br><span class="line"></span><br><span class="line">                     This helper works by setting the PC (program</span><br><span class="line">                     counter) to an override function which is run in</span><br><span class="line">                     place of the original probed function. This means</span><br><span class="line">                     the probed function is not run at all. The</span><br><span class="line">                     replacement function just returns with the required</span><br><span class="line">                     value.</span><br><span class="line"></span><br><span class="line">                     This helper has security implications, and thus is</span><br><span class="line">                     subject to restrictions. It is only available if</span><br><span class="line">                     the kernel was compiled with the</span><br><span class="line">                     CONFIG_BPF_KPROBE_OVERRIDE configuration option,</span><br><span class="line">                     and in this case it only works on functions tagged</span><br><span class="line">                     with ALLOW_ERROR_INJECTION in the kernel code.</span><br><span class="line"></span><br><span class="line">                     Also, the helper is only available for the</span><br><span class="line">                     architectures having the</span><br><span class="line">                     CONFIG_FUNCTION_ERROR_INJECTION option. As of this</span><br><span class="line">                     writing, x86 architecture is the only one to</span><br><span class="line">                     support this feature.</span><br><span class="line"></span><br><span class="line">              Return 0</span><br></pre></td></tr></table></figure>
+<p>可以看到,虽然这个函数可以覆盖<code>kprobes</code>函数的返回值,但是他是基于linux下的<code>error injection</code>实现的,即<code>SYSCALL_DEFINEx</code>宏实现的函数</p>
+<p>并且内核编译选项需要开启<code>CONFIG_BPF_KPROBE_OVERRIDE</code>且目标函数必须有<code>ALLOW_ERROR_INJECTION</code>声明,相关源码链接可以<a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.15.46/source/include/asm-generic/error-injection.h#L26">点我</a>,系统调用(syscall)都实现了这个声明,并且这个函数截止到目前,只能在x86架构的CPU上使用,ARM等CPU并不支持这个函数</p>
+<p>我们都知道<code>do_sys_openat2</code> 函数处理了所有open调用,但我们无法直接使用<code>bpf_override_return</code>控制<code>do_sys_openat2</code>的返回值,因为它并没有实现<code>ALLOW_ERROR_INJECTION</code>,所以这一条路走不通,那怎么办呢?<br>既然<code>do_sys_openat2</code>走不通,那我们只能拿<code>sys_openat</code>这个系统调用开刀了,函数完整定义请<a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.15.46/source/fs/open.c#L1239">点我</a>,这个函数的执行流程大概如下:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">call sys_openat()</span><br><span class="line">    return do_sys_openat2()</span><br></pre></td></tr></table></figure>
+<p>可以看到,如果我们处理了<code>sys_openat</code>的<code>return</code>,我们就可以控制内核返回值,此时<code>kretprobe</code>就可以粉墨登场了,用<code>kretprobe</code>可以在<code>return</code>前插桩,做一些我们想要的操作.<br>有人可能会问了,为什么不直接用<code>kprobe</code>去处理<code>sys_openat</code>呢,因为<code>sys_openat</code>无法直接拿到文件名,需要在<code>do_sys_openat2</code>才能拿到完整文件名,所以流程就变成了</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">call sys_openat() // 不处理kprobe</span><br><span class="line">    ret = hook(do_sys_openat2()) //先处理do_sys_openat2,拿到文件名等我们需要的参数</span><br><span class="line">    hook(ret) // 开始处理返回值</span><br><span class="line">    return ret // 完成文件保护</span><br></pre></td></tr></table></figure>
+<h2 id="开始编码"><a href="#开始编码" class="headerlink" title="开始编码"></a>开始编码</h2><p>eBPF代码如下:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// +build ignore</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __TARGET_ARCH_x86 <span class="comment">// 定义目标架构,必须</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;common.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;bpf_core_read.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;bpf_helpers.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;bpf_tracing.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">char</span> __license[] SEC(<span class="string">&quot;license&quot;</span>) = <span class="string">&quot;Dual MIT/GPL&quot;</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">define</span> TASK_COMM_LEN 80</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PATH_MAX      256</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EFAULT 14</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">event</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    u32 pid;                 <span class="comment">// pid</span></span><br><span class="line">    u8  comm[TASK_COMM_LEN]; <span class="comment">//进程名</span></span><br><span class="line">    u8  filename[PATH_MAX];  <span class="comment">//文件名</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    __uint(type, BPF_MAP_TYPE_RINGBUF);</span><br><span class="line">    __uint(max_entries, <span class="number">1</span> &lt;&lt; <span class="number">24</span>);</span><br><span class="line">&#125; events <span class="title function_">SEC</span><span class="params">(<span class="string">&quot;.maps&quot;</span>)</span>; <span class="comment">//定义 BPF map 用于和用户层交互</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    __uint(type, BPF_MAP_TYPE_HASH);</span><br><span class="line">    __uint(key_size, <span class="keyword">sizeof</span>(u64));</span><br><span class="line">    __uint(value_size, <span class="keyword">sizeof</span>(u8) * PATH_MAX);</span><br><span class="line">    __uint(max_entries, <span class="number">4096</span>);</span><br><span class="line">&#125; check_file <span class="title function_">SEC</span><span class="params">(<span class="string">&quot;.maps&quot;</span>)</span>; <span class="comment">// 检测文件列表</span></span><br><span class="line"></span><br><span class="line"><span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">event</span> *<span class="title">unused</span> __<span class="title">attribute__</span>((<span class="title">unused</span>));</span> <span class="comment">//必须,否则编译器会优化掉event导致BPF验证失败</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CHECK_STR(src, dst, code)                        \</span></span><br><span class="line"><span class="meta">    const char __chkstr[] __attribute__((unused)) = dst; \</span></span><br><span class="line"><span class="meta">    u8         __checkflag                        = 1;   \</span></span><br><span class="line"><span class="meta">    for (int i = 0; i &lt; sizeof(dst); i++)                \</span></span><br><span class="line"><span class="meta">    &#123;                                                    \</span></span><br><span class="line"><span class="meta">        <span class="keyword">if</span> (dst[i] != src[i])                            \</span></span><br><span class="line"><span class="meta">        &#123;                                                \</span></span><br><span class="line"><span class="meta">            __checkflag = 0;                             \</span></span><br><span class="line"><span class="meta">            break;                                       \</span></span><br><span class="line"><span class="meta">        &#125;                                                \</span></span><br><span class="line"><span class="meta">    &#125;                                                    \</span></span><br><span class="line"><span class="meta">    <span class="keyword">if</span> (__checkflag)                                     \</span></span><br><span class="line"><span class="meta">    &#123;                                                    \</span></span><br><span class="line"><span class="meta">        code                                             \</span></span><br><span class="line"><span class="meta">    &#125;</span></span><br><span class="line"></span><br><span class="line">SEC(<span class="string">&quot;kprobe/do_sys_openat2&quot;</span>)</span><br><span class="line"><span class="type">int</span> <span class="title function_">BPF_KPROBE</span><span class="params">(sys_openat, <span class="type">int</span> dfd, <span class="type">const</span> <span class="type">char</span> *filename)</span> <span class="comment">// BPF_KPROBE 宏依赖__TARGET_ARCH_xxx 定义目标机器</span></span><br><span class="line">&#123;</span><br><span class="line">    u64           tgid     = bpf_get_current_pid_tgid();</span><br><span class="line">    u32           pid      = tgid &gt;&gt; <span class="number">32</span>; <span class="comment">// 获取进程id</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">event</span> *<span class="title">fileinfo</span> =</span> bpf_ringbuf_reserve(&amp;events, <span class="keyword">sizeof</span>(<span class="keyword">struct</span> event), <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span> (!fileinfo)</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    fileinfo-&gt;pid = pid;</span><br><span class="line">    bpf_probe_read_user_str(fileinfo-&gt;filename, PATH_MAX, filename); <span class="comment">//获取文件名</span></span><br><span class="line">    bpf_get_current_comm(&amp;fileinfo-&gt;comm, TASK_COMM_LEN);            <span class="comment">// 获取读取进程名</span></span><br><span class="line">    CHECK_STR(fileinfo-&gt;filename, <span class="string">&quot;test.txt&quot;</span>, &#123;</span><br><span class="line">        bpf_ringbuf_submit(fileinfo, <span class="number">0</span>); <span class="comment">// 把event提交给用户层读取</span></span><br><span class="line">        <span class="type">const</span> <span class="type">char</span> msg[] = <span class="string">&quot;dfd:%d file:%x str:%s &quot;</span>;</span><br><span class="line">        bpf_trace_printk(msg, <span class="keyword">sizeof</span>(msg), dfd, filename, fileinfo-&gt;filename);</span><br><span class="line">        <span class="type">char</span> save[PATH_MAX] = &#123;<span class="number">0</span>&#125;;</span><br><span class="line">        bpf_probe_read_user_str(save, PATH_MAX, filename);</span><br><span class="line">        bpf_map_update_elem(&amp;check_file, &amp;tgid, &amp;save, BPF_ANY); <span class="comment">//更新内部map供下面使用,注意,不能直接使用ringbuf申请的空间,需要自己开辟栈空间存储</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;);</span><br><span class="line">    bpf_ringbuf_discard(fileinfo, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">SEC(<span class="string">&quot;kretprobe/sys_openat&quot;</span>)</span><br><span class="line"><span class="type">int</span> <span class="title function_">sys_ret_openat</span><span class="params">(<span class="keyword">struct</span> pt_regs *ctx)</span></span><br><span class="line">&#123;</span><br><span class="line">    u64         tgid                = bpf_get_current_pid_tgid();</span><br><span class="line">    u32         pid                 = tgid &gt;&gt; <span class="number">32</span>; <span class="comment">// 获取进程id</span></span><br><span class="line">    <span class="type">char</span>        comm[TASK_COMM_LEN] = &#123;<span class="number">0</span>&#125;;</span><br><span class="line">    <span class="type">const</span> <span class="type">char</span> *filename            = bpf_map_lookup_elem(&amp;check_file, &amp;tgid);</span><br><span class="line">    bpf_get_current_comm(comm, TASK_COMM_LEN); <span class="comment">// 获取读取进程名</span></span><br><span class="line">    <span class="keyword">if</span> (filename != <span class="literal">NULL</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        bpf_map_delete_elem(&amp;check_file, &amp;tgid);</span><br><span class="line">        <span class="type">const</span> <span class="type">char</span> msg[] = <span class="string">&quot;hidden file:%s by %s(%d)&quot;</span>;</span><br><span class="line">        bpf_trace_printk(msg, <span class="keyword">sizeof</span>(msg), filename, comm, pid);</span><br><span class="line">        bpf_override_return(ctx,-EFAULT); <span class="comment">// 修改返回值</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>用户层代码如下:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;bytes&quot;</span></span><br><span class="line">	<span class="string">&quot;encoding/binary&quot;</span></span><br><span class="line">	<span class="string">&quot;errors&quot;</span></span><br><span class="line">	<span class="string">&quot;log&quot;</span></span><br><span class="line">	<span class="string">&quot;os&quot;</span></span><br><span class="line">	<span class="string">&quot;os/signal&quot;</span></span><br><span class="line">	<span class="string">&quot;syscall&quot;</span></span><br><span class="line"></span><br><span class="line">	<span class="string">&quot;github.com/cilium/ebpf/link&quot;</span></span><br><span class="line">	<span class="string">&quot;github.com/cilium/ebpf/ringbuf&quot;</span></span><br><span class="line">	<span class="string">&quot;github.com/cilium/ebpf/rlimit&quot;</span></span><br><span class="line">	<span class="string">&quot;golang.org/x/sys/unix&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// $BPF_CLANG and $BPF_CFLAGS are set by the Makefile.</span></span><br><span class="line"><span class="comment">//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -cflags $BPF_CFLAGS -type event bpf ../bpf_kern/src/bpf.c -- -I../bpf_kern/include</span></span><br><span class="line"><span class="comment">//注意填写go generate 的生成参数</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="comment">// Name of the kernel function to trace.</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// Subscribe to signals for terminating the program.</span></span><br><span class="line">	stopper := <span class="built_in">make</span>(<span class="keyword">chan</span> os.Signal, <span class="number">1</span>)</span><br><span class="line">	signal.Notify(stopper, os.Interrupt, syscall.SIGTERM)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Allow the current process to lock memory for eBPF resources.</span></span><br><span class="line">	<span class="keyword">if</span> err := rlimit.RemoveMemlock(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Fatal(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Load pre-compiled programs and maps into the kernel.</span></span><br><span class="line">	objs := bpfObjects&#123;&#125; <span class="comment">//由bpf2go 生成 在运行前需要先执行generate </span></span><br><span class="line">	<span class="keyword">if</span> err := loadBpfObjects(&amp;objs, <span class="literal">nil</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Fatalf(<span class="string">&quot;loading objects: %v&quot;</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">defer</span> objs.Close()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Open a Kprobe at the entry point of the kernel function and attach the</span></span><br><span class="line">	<span class="comment">// pre-compiled program. Each time the kernel function enters, the program</span></span><br><span class="line">	<span class="comment">// will emit an event containing pid and command of the execved task.</span></span><br><span class="line">	<span class="comment">//kp, err := link.AttachTracing(link.TracingOptions&#123;Program: objs.bpfPrograms.SysOpenat&#125;)</span></span><br><span class="line">	kp, err := link.Kprobe(<span class="string">&quot;do_sys_openat2&quot;</span>, objs.SysOpenat, <span class="literal">nil</span>)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Fatalf(<span class="string">&quot;opening do_sys_openat2 kprobe: %s&quot;</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	_, err = link.Kretprobe(<span class="string">&quot;sys_openat&quot;</span>, objs.SysRetOpenat, <span class="literal">nil</span>)</span><br><span class="line">	<span class="comment">//kp, err := link.Tracepoint(&quot;syscalls&quot;, &quot;sys_enter_openat&quot;, objs.SysOpenat, nil)</span></span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Fatalf(<span class="string">&quot;opening sys_openat kprobe: %s&quot;</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">defer</span> kp.Close()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Open a ringbuf reader from userspace RINGBUF map described in the</span></span><br><span class="line">	<span class="comment">// eBPF C program.</span></span><br><span class="line">	rd, err := ringbuf.NewReader(objs.Events)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Fatalf(<span class="string">&quot;opening ringbuf reader: %s&quot;</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">defer</span> rd.Close()</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Close the reader when the process receives a signal, which will exit</span></span><br><span class="line">	<span class="comment">// the read loop.</span></span><br><span class="line">	<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		&lt;-stopper</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> err := rd.Close(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			log.Fatalf(<span class="string">&quot;closing ringbuf reader: %s&quot;</span>, err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	log.Println(<span class="string">&quot;Waiting for events..&quot;</span>)</span><br><span class="line"></span><br><span class="line">	<span class="comment">// bpfEvent is generated by bpf2go.</span></span><br><span class="line">	<span class="keyword">var</span> event bpfEvent</span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		record, err := rd.Read()</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="keyword">if</span> errors.Is(err, ringbuf.ErrClosed) &#123;</span><br><span class="line">				log.Println(<span class="string">&quot;Received signal, exiting..&quot;</span>)</span><br><span class="line">				<span class="keyword">return</span></span><br><span class="line">			&#125;</span><br><span class="line">			log.Printf(<span class="string">&quot;reading from reader: %s&quot;</span>, err)</span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// Parse the ringbuf event entry into a bpfEvent structure.</span></span><br><span class="line">		<span class="keyword">if</span> err := binary.Read(bytes.NewBuffer(record.RawSample), binary.LittleEndian, &amp;event); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			log.Printf(<span class="string">&quot;parsing ringbuf event: %s&quot;</span>, err)</span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		log.Printf(<span class="string">&quot;pid: %d\tcomm: %s\n file:%s\n&quot;</span>,</span><br><span class="line">			event.Pid,</span><br><span class="line">			unix.ByteSliceToString(event.Comm[:]),</span><br><span class="line">			unix.ByteSliceToString(event.Filename[:]),</span><br><span class="line">		)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="演示"><a href="#演示" class="headerlink" title="演示"></a>演示</h2><p>测试环境 <code>Ubuntu 22.04 5.15.0-46-generic</code></p>
+<p>正常查看文件:<br><img src="/9fb07644999e/1.png"></p>
+<p>运行go生成的程序:<br><img src="/9fb07644999e/2.png"></p>
+<p>再次查看<code>test.txt</code>,此时已经完成在用户层下的文件隐藏,其实起作用的还是eBPF内核层,比起驱动,我们完全不用担心内核会挂掉<br><img src="/9fb07644999e/3.png"><br><img src="/9fb07644999e/4.png"></p>
+<h2 id="Tips"><a href="#Tips" class="headerlink" title="Tips"></a>Tips</h2><ol>
+<li><code>bpf_trace_printk</code> 函数只能打印3个参数,并且特别慢,请只用于调试,查看print的内容请执行<code>cat /sys/kernel/debug/tracing/trace_pipe</code></li>
+<li>善用<code>clang -S</code> 输出 bpf 汇编,方便调试bpf程序,eBPF的错误提示只能说是聊胜于无</li>
+<li>在线看源码<a target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.15.46/source/">点我</a>,方便本地没有内核源码的人查看内核定义</li>
+<li>碰上不理解的多去看<code>bcc</code>和<code>ebpf</code>的示例,基本上已经把常见的eBPF类型写的很清楚了</li>
+<li><code>bpf_helpers</code>一定要去看使用手册,搞清楚什么情况下才能用,在线浏览<a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man7/bpf-helpers.7.html">点我</a>,例如在源码里有的<code>bpf_sys_close</code> 手册上实际并没有,一定要按手册来</li>
+<li>全部软件架构请参考<a target="_blank" rel="noopener" href="https://github.com/libbpf/libbpf-bootstrap/tree/master/examples/c">libbpf-bootstrap</a>和<a target="_blank" rel="noopener" href="https://github.com/cilium/ebpf/tree/master/examples">cilium&#x2F;ebpf</a></li>
+</ol>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>eBPF作为一个新的内核扩展技术,的确可以称得上是超能力了,尤其是CO-RE,以后可以更方便的支持不同架构的机器去做内核层的数据分析,对于云原生架构也非常友好,很适合现在docker和k8s遍地开花的时代,对于安全方面, 也非常适合<code>hids</code>和<code>edr/ndr</code> 层面,期待以后eBPF技术对内核扩展更多功能吧</p>
+
+  </div>
+</article>
+
+
+    <div class="blog-post-comments">
+        <div id="utterances_thread">
+            <noscript>Please enable JavaScript to view the comments.</noscript>
+        </div>
+    </div>
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+         
+          <li><a href="/">Home</a></li>
+         
+          <li><a href="/about/">About</a></li>
+         
+          <li><a href="/archives/">Writing</a></li>
+         
+          <li><a target="_blank" rel="noopener" href="https://github.com/xxxNull">Projects</a></li>
+        
+      </ul>
+    </div>
+
+    <div id="toc-footer" style="display: none">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFeBPF-x2F-BPF"><span class="toc-number">1.</span> <span class="toc-text">什么是eBPF&#x2F;BPF</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFCilium-x2F-ebpf"><span class="toc-number">2.</span> <span class="toc-text">什么是Cilium&#x2F;ebpf</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#eBPF%E7%9A%84%E4%BC%98%E5%8A%BF%E5%92%8C%E5%8A%A3%E5%8A%BF"><span class="toc-number">3.</span> <span class="toc-text">eBPF的优势和劣势</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%A8eBPF%E5%AE%9E%E7%8E%B0linux%E4%B8%8B%E6%96%87%E4%BB%B6%E4%BF%9D%E6%8A%A4"><span class="toc-number">4.</span> <span class="toc-text">用eBPF实现linux下文件保护</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%80%E5%A7%8B%E7%BC%96%E7%A0%81"><span class="toc-number">5.</span> <span class="toc-text">开始编码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%BC%94%E7%A4%BA"><span class="toc-number">6.</span> <span class="toc-text">演示</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Tips"><span class="toc-number">7.</span> <span class="toc-text">Tips</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">8.</span> <span class="toc-text">总结</span></a></li></ol>
+    </div>
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://xxxnull.github.io/9fb07644999e/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://xxxnull.github.io/9fb07644999e/&text=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://xxxnull.github.io/9fb07644999e/&title=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://xxxnull.github.io/9fb07644999e/&is_video=false&description=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=使用eBPF实现linux下无需驱动的文件保护&body=Check out this article: https://xxxnull.github.io/9fb07644999e/"><i class="fas fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://xxxnull.github.io/9fb07644999e/&title=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://xxxnull.github.io/9fb07644999e/&title=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://xxxnull.github.io/9fb07644999e/&title=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://xxxnull.github.io/9fb07644999e/&title=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://xxxnull.github.io/9fb07644999e/&name=使用eBPF实现linux下无需驱动的文件保护&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://xxxnull.github.io/9fb07644999e/&t=使用eBPF实现linux下无需驱动的文件保护"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fas fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fas fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fas fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fas fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2014-2022
+    admin
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="https://github.com/xxxNull">Projects</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+ 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script> 
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script> 
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="far fa-clone"></i>';
+    btn += '</span>'; 
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Google Analytics -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Umami Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+    <script type="text/javascript">
+      var utterances_repo = 'xxxNull/xxxNull.github.io';
+      var utterances_issue_term = 'pathname';
+      var utterances_label = 'Comment';
+      var utterances_theme = 'github-dark';
+
+      (function(){
+          var script = document.createElement('script');
+
+          script.src = 'https://utteranc.es/client.js';
+          script.setAttribute('repo', utterances_repo);
+          script.setAttribute('issue-term', 'pathname');
+          script.setAttribute('label', utterances_label);
+          script.setAttribute('theme', utterances_theme);
+          script.setAttribute('crossorigin', 'anonymous');
+          script.async = true;
+          (document.getElementById('utterances_thread')).appendChild(script);
+      }());
+  </script>
+
+</body>
+</html>
