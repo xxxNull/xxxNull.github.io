@@ -4,6 +4,19 @@
   
     
     <entry>
+      <title>记一次国产ARM架构长城服务器宕机排查</title>
+      <link href="/6d8ba694906e/"/>
+      <url>/6d8ba694906e/</url>
+      
+        <content type="html"><![CDATA[<h2 id="环境"><a href="#环境" class="headerlink" title="环境:"></a>环境:</h2><ul><li>型号: GreatWall DF723</li><li>CPU: Phytium FT-2000+&#x2F;64 CORE Little Endian</li><li>架构: aarch64</li><li>内存容量: 128G</li><li>系统: 麒麟V10 Kylin Linux Advanced Server V10 (Tercel)</li><li>内核版本: 4.19.90-17.5.ky10.aarch64</li></ul><h2 id="症状"><a href="#症状" class="headerlink" title="症状"></a>症状</h2><p>服务器1-2天内必宕机，并且部分进程CPU均为100%,且调度大量进程状态为R(Running),无法及时让出CPU给其他进程<br>且有大量<code>watchdog: BUG: soft lockup - CPU#0 stuck for 67s! [migration/0:13]</code> soft lockup 消息</p><h2 id="初步排查"><a href="#初步排查" class="headerlink" title="初步排查"></a>初步排查</h2><p>查看<code>dmesg</code>消息，发现大量<code>rcu: INFO: rcu_sched detected stalls on CPUs/tasks:</code> 报告CPU处于<code>stalls</code>状态<br>起初以为是内核某个线程死循环，无法让出CPU导致的内核BUG，使用<code>yum install kernel</code>升级内核后，症状依旧</p><h2 id="锁定症状"><a href="#锁定症状" class="headerlink" title="锁定症状"></a>锁定症状</h2><p><code>dmesg</code>里存在大量</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">rcu:    10-...0: (8 GPs behind) idle=7de/1/0x4000000000000000 softirq=392353/392353 fqs=2586</span><br><span class="line">rcu:    (detected by 7, t=6002 jiffies, g=18508537, q=6922)</span><br><span class="line">rcu:    10-...0: (8 GPs behind) idle=7de/1/0x4000000000000000 softirq=392353/392353 fqs=9430</span><br><span class="line">rcu:    (detected by 5, t=24007 jiffies, g=18508537, q=28198)</span><br><span class="line">10代表CPU10 进入了 stalls 状态</span><br><span class="line">detected by 7,5 表示被CPU7,CPU5检测到</span><br></pre></td></tr></table></figure><p>消息,证明CPU10出问题了<br>使用 <code>echo 0 &gt;/sys/bus/cpu/devices/cpu10/online</code> 下线CPU10<br>后续再未出现该症状,国产的CPU可能还是有兼容性问题</p>]]></content>
+      
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>使用eBPF实现linux下无需驱动的文件保护</title>
       <link href="/9fb07644999e/"/>
       <url>/9fb07644999e/</url>
